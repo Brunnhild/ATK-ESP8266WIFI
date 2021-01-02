@@ -38,6 +38,12 @@ extern u8 *fatbuf;//SD卡数据缓存区
 #define T_JPEG		0X52	//jpeg文件		 
 #define T_GIF		0X53	//gif文件  
 
+#define T_WAV		0X4A	//WAV文件
+#define T_MP3		0X41	//MP3文件 
+#define T_APE		0X42	//APE文件 
+
+#define T_AVI		0X60	//avi文件  
+
  
 u8 exfuns_init(void);							//申请内存
 u8 f_typetell(u8 *fname);						//识别文件类型

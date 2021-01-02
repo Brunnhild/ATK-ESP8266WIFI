@@ -1,3 +1,6 @@
+#ifndef __APP_H
+#define __APP_H
+
 #include "sys.h"
 #include "delay.h"
 #include "usart.h"
@@ -5,11 +8,26 @@
 #include "malloc.h"
 #include "usart3.h"
 #include "common.h"
+#include "audioplay.h"
+#include "piclib.h"
+
+#include "ff.h"
+#include "wm8978.h"
+#include "i2s.h"
+#include "led.h"
+#include "lcd.h"
+#include "key.h"
+#include "exfuns.h"  
+#include "text.h"
+#include "string.h"  
 
 
 int get_response(int clear, char *res);
-void erase_data();
+void erase_data(void);
 int send_command_with_retry(char *cmd, int timeout, int retry, int erase, char *res);
 void send_command_util_success(char *cmd, int timeout, int erase, char *res);
 void wait_for_data(int clear, char *res);
 void extract_peer_ip(char *res, char *ip);
+void music_player(void);
+
+#endif

@@ -332,7 +332,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F40_41xxx,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\USER;..\ATK-ESP8266;..\CORE;..\FATFS\src;..\FATFS\exfuns;..\FWLIB\inc;..\HARDWARE\24CXX;..\HARDWARE\ADC;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\LED;..\HARDWARE\SDIO;..\HARDWARE\SPI;..\HARDWARE\SRAM;..\HARDWARE\TIMER;..\HARDWARE\TOUCH;..\HARDWARE\USART3;..\HARDWARE\W25QXX;..\HARDWARE\ADC3;..\HARDWARE\LSENS;..\MALLOC;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\TEXT;..\USER;..\USMART</IncludePath>
+              <IncludePath>..\USER;..\ATK-ESP8266;..\CORE;..\FATFS\src;..\FATFS\exfuns;..\FWLIB\inc;..\HARDWARE\24CXX;..\HARDWARE\ADC;..\HARDWARE\IIC;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\LED;..\HARDWARE\SDIO;..\HARDWARE\SPI;..\HARDWARE\SRAM;..\HARDWARE\TIMER;..\HARDWARE\TOUCH;..\HARDWARE\USART3;..\HARDWARE\W25QXX;..\HARDWARE\ADC3;..\HARDWARE\LSENS;..\MALLOC;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\TEXT;..\USER;..\USMART;..\APP;..\AUDIOCODEC\wav;..\HARDWARE\I2S;..\HARDWARE\WM8978;..\PICTURE</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -525,6 +525,16 @@
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\LSENS\lsens.c</FilePath>
             </File>
+            <File>
+              <FileName>i2s.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\I2S\i2s.c</FilePath>
+            </File>
+            <File>
+              <FileName>wm8978.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\WM8978\wm8978.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -704,6 +714,51 @@
               <FileName>readme.txt</FileName>
               <FileType>5</FileType>
               <FilePath>..\readme.txt</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>APP</GroupName>
+          <Files>
+            <File>
+              <FileName>audioplay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\audioplay.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>AUDIOCODEC</GroupName>
+          <Files>
+            <File>
+              <FileName>wavplay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\AUDIOCODEC\wav\wavplay.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>PICTURE</GroupName>
+          <Files>
+            <File>
+              <FileName>bmp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\bmp.c</FilePath>
+            </File>
+            <File>
+              <FileName>gif.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\gif.c</FilePath>
+            </File>
+            <File>
+              <FileName>piclib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\piclib.c</FilePath>
+            </File>
+            <File>
+              <FileName>tjpgd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\PICTURE\tjpgd.c</FilePath>
             </File>
           </Files>
         </Group>
