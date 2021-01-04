@@ -231,3 +231,47 @@ void music_player()
     myfree(SRAMIN, imgfileinfo.lfname);
     myfree(SRAMIN, imgindextbl);
 }
+
+void test_write_file()
+{
+    FIL fil;
+    char fname[20] = "0:/test.txt";
+    char wtext[20] = "Test text";
+    u32 cnt;
+
+    FRESULT res = f_open(&fil, fname, FA_CREATE_ALWAYS | FA_WRITE);
+    if (res)
+    {
+        printf("Open file error : %d\r\n", res);
+        return;
+    }
+    res = f_write(&fil, wtext, sizeof(wtext), (void *)&cnt);
+    if (res)
+    {
+        printf("Write file error : %d\r\n", res);
+        return;
+    }
+    res = f_close(&fil);
+    if (res) {
+        printf("Close file error : %d\r\n", res);
+        return;
+    }
+}
+
+int open_big_file(char *fname, FileWriter *fw) {
+    FRESULT res = f_open(&(fw->fil), fname, FA_CREATE_ALWAYS | FA_WRITE);
+    return res;
+}
+
+int write_data(u8 *data, int len, FileWriter *fw) {
+    data[len] = '\0';
+    int r_len;
+    FRESULT res = f_write(&(fw->fil), data, sizeof(data), (void *)&r_len);
+    if (r_len != len || res) return res || 1;
+    else return res;
+}
+
+int end_data(FileWriter *fw) {
+    FRESULT res = f_close(&(fw->fil));
+    return res;
+}

@@ -29,5 +29,14 @@ void send_command_util_success(char *cmd, int timeout, int erase, char *res);
 void wait_for_data(int clear, char *res);
 void extract_peer_ip(char *res, char *ip);
 void music_player(void);
+void test_write_file(void);
+
+typedef struct {
+    FIL fil;
+} FileWriter;
+
+int open_big_file(char *fname, FileWriter *fw);
+int write_data(u8 *data, int len, FileWriter *fw);
+int end_data(FileWriter *fw);
 
 #endif

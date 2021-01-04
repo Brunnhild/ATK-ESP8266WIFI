@@ -94,6 +94,7 @@ int main(void)
         LCD_Clear(WHITE); //清屏
     }
     // atk_8266_test();		//进入ATK_ESP8266测试
+    // test_write_file();
 
     while (atk_8266_send_cmd("AT", "OK", 20)) //检查WIFI模块是否在线
     {
@@ -106,8 +107,9 @@ int main(void)
     }
     LCD_Clear(WHITE); //清屏
 
+    int run_greet = 0;
     // Start the server and client and send greetings
-    if (DEVICE_ID == 1)
+    if (DEVICE_ID == 1 && run_greet)
     {
         send_command_with_retry("AT+CWMODE=2", 200, 3, 1, NULL);
         send_command_with_retry("AT+CWSAP=\"ATK-ESP8266\",\"12345678\",1,4", 200, 3, 1, NULL);
@@ -139,7 +141,7 @@ int main(void)
         //		wait_for_data(1, res);
         printf("Greeting from %s: %s\n", peer_ip, res);
     }
-    else if (DEVICE_ID == 2)
+    else if (DEVICE_ID == 2 && run_greet)
     {
         send_command_with_retry("AT+CWMODE=3", 200, 3, 1, NULL);
         send_command_util_success("AT+CWJAP=\"ATK-ESP8266\",\"12345678\",1,4", 500, 1, NULL);
