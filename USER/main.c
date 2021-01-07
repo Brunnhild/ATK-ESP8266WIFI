@@ -52,7 +52,7 @@ int main(void)
     W25QXX_Init();            //初始化W25Q128
     WM8978_Init();            //初始化WM8978
     WM8978_HPvol_Set(40, 40); //耳机音量设置
-    WM8978_SPKvol_Set(50);    //喇叭音量设置
+    WM8978_SPKvol_Set(1);    //喇叭音量设置
     exfuns_init();            //为fatfs相关变量申请内存
     f_mount(fs[0], "0:", 1);  //挂载SD卡
     f_mount(fs[1], "1:", 1);  //挂载FLASH.
@@ -173,21 +173,11 @@ int main(void)
 
         printf("Greeting sent\n");
     }
+    LCD_Clear(WHITE); //清屏
 
     u8 adcx;
     Lsens_Init(); //初始化光敏传感器
-    POINT_COLOR = RED;
-    LCD_ShowString(30, 50, 200, 16, 16, "Explorer STM32F4");
-    LCD_ShowString(30, 70, 200, 16, 16, "LSENS TEST");
-    LCD_ShowString(30, 90, 200, 16, 16, "ATOM@ALIENTEK");
-    LCD_ShowString(30, 110, 200, 16, 16, "2014/5/7");
-    POINT_COLOR = BLUE; //设置字体为蓝色
-    LCD_ShowString(30, 130, 200, 16, 16, "LSENS_VAL:");
-
     short temp;
-    POINT_COLOR = RED;
-    POINT_COLOR = BLUE;                                        //设置字体为蓝色
-    LCD_ShowString(30, 150, 200, 16, 16, "TEMPERATE: 00.00C"); //先在固定位置显示小数点
 
     // while (1)
     // {
@@ -221,13 +211,7 @@ int main(void)
         LCD_Fill(30, 50, 240, 66, WHITE); //清除显示
         delay_ms(200);
     }
-    POINT_COLOR = RED;
-    Show_Str(60, 50, 200, 16, "Explorer STM32F4开发板", 16, 0);
-    Show_Str(60, 70, 200, 16, "音乐播放器实验", 16, 0);
-    Show_Str(60, 90, 200, 16, "正点原子@ALIENTEK", 16, 0);
-    Show_Str(60, 110, 200, 16, "2014年5月24日", 16, 0);
-    Show_Str(60, 130, 200, 16, "KEY0:NEXT   KEY2:PREV", 16, 0);
-    Show_Str(60, 150, 200, 16, "KEY_UP:PAUSE/PLAY", 16, 0);
+    ui_show();
     while (1)
     {
         music_player();

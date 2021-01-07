@@ -88,6 +88,14 @@ void extract_peer_ip(char *res, char *ip)
     }
 }
 
+void index_show(u16 index, u16 total)
+{
+    //显示当前曲目的索引,及总曲目数
+    LCD_ShowxNum(30 + 0, 230, index, 3, 16, 0X80); //索引
+    LCD_ShowChar(30 + 24, 230, '/', 16, 0);
+    LCD_ShowxNum(30 + 32, 230, total, 3, 16, 0X80); //总曲目
+}
+
 void music_player()
 {
     u8 res;
@@ -128,16 +136,16 @@ void music_player()
         LCD_Fill(60, 190, 240, 146, WHITE); //清除显示
         delay_ms(200);
     }
-    wavfileinfo.lfsize = _MAX_LFN * 2 + 1;                                     //长文件名最大长度
-    wavfileinfo.lfname = mymalloc(SRAMIN, wavfileinfo.lfsize);                 //为长文件缓存区分配内存
-    pname = mymalloc(SRAMIN, wavfileinfo.lfsize);                              //为带路径的文件名分配内存
+    wavfileinfo.lfsize = _MAX_LFN * 2 + 1;                     //长文件名最大长度
+    wavfileinfo.lfname = mymalloc(SRAMIN, wavfileinfo.lfsize); //为长文件缓存区分配内存
+    pname = mymalloc(SRAMIN, wavfileinfo.lfsize);              //为带路径的文件名分配内存
 
     imgfileinfo.lfsize = _MAX_LFN * 2 + 1;
     imgfileinfo.lfname = mymalloc(SRAMIN, imgfileinfo.lfsize);
     imgname = mymalloc(SRAMIN, imgfileinfo.lfsize);
 
-    wavindextbl = mymalloc(SRAMIN, 2 * totwavnum);                             //申请2*totwavnum个字节的内存,用于存放音乐文件索引
-    imgindextbl = mymalloc(SRAMIN, 2 * totwavnum);                             //申请图片索引表内存
+    wavindextbl = mymalloc(SRAMIN, 2 * totwavnum);                                                    //申请2*totwavnum个字节的内存,用于存放音乐文件索引
+    imgindextbl = mymalloc(SRAMIN, 2 * totwavnum);                                                    //申请图片索引表内存
     while (wavfileinfo.lfname == NULL || pname == NULL || wavindextbl == NULL || imgindextbl == NULL) //内存分配出错
     {
         Show_Str(60, 190, 240, 16, "内存分配失败!", 16, 0);
@@ -167,15 +175,19 @@ void music_player()
         }
     }
     res = f_opendir(&imgdir, "0:/PICTURE");
-    if (res == FR_OK) {
+    if (res == FR_OK)
+    {
         curindex = 0;
-        while (1) {
+        while (1)
+        {
             temp = imgdir.index;
             res = f_readdir(&imgdir, &imgfileinfo);
-            if (res != FR_OK || imgfileinfo.fname[0] == 0) break;
+            if (res != FR_OK || imgfileinfo.fname[0] == 0)
+                break;
             fn = (u8 *)(*imgfileinfo.lfname ? imgfileinfo.lfname : imgfileinfo.fname);
             res = f_typetell(fn);
-            if ((res & 0XF0) == T_JPG || T_BMP || T_JPEG) {
+            if ((res & 0XF0) == T_JPG || T_BMP || T_JPEG)
+            {
                 imgindextbl[curindex] = temp;
                 curindex++;
             }
@@ -185,31 +197,33 @@ void music_player()
     curindex = 0;                                        //从0开始显示
     res = f_opendir(&wavdir, (const TCHAR *)"0:/MUSIC"); //打开目录
     res = f_opendir(&imgdir, (const TCHAR *)"0:/PICTURE");
-    while (res == FR_OK)                                 //打开成功
+    while (res == FR_OK) //打开成功
     {
         dir_sdi(&wavdir, wavindextbl[curindex]); //改变当前目录索引
         dir_sdi(&imgdir, imgindextbl[curindex]);
-        res = f_readdir(&wavdir, &wavfileinfo);  //读取目录下的一个文件
+        res = f_readdir(&wavdir, &wavfileinfo); //读取目录下的一个文件
         if (res != FR_OK || wavfileinfo.fname[0] == 0)
             break; //错误了/到末尾了,退出
         fn = (u8 *)(*wavfileinfo.lfname ? wavfileinfo.lfname : wavfileinfo.fname);
         strcpy((char *)pname, "0:/MUSIC/");         //复制路径(目录)
         strcat((char *)pname, (const char *)fn);    //将文件名接在后面
-        LCD_Fill(60, 190, 240, 190 + 16, WHITE);    //清除之前的显示
-        Show_Str(60, 190, 240 - 60, 16, fn, 16, 0); //显示歌曲名字
-        audio_index_show(curindex + 1, totwavnum);
+        LCD_Fill(30, 190, 240, 190 + 16, WHITE);    //清除之前的显示
+        Show_Str(30, 190, 240 - 60, 16, fn, 16, 0); //显示歌曲名字
+        index_show(curindex + 1, totwavnum);
 
         res = f_readdir(&imgdir, &imgfileinfo);
         if (res != FR_OK || imgfileinfo.fname[0] == 0)
             break; //错误了/到末尾了,退出
         fn = (u8 *)(*imgfileinfo.lfname ? imgfileinfo.lfname : imgfileinfo.fname);
-        strcpy((char *)imgname, "0:/PICTURE/");         //复制路径(目录)
-        strcat((char *)imgname, (const char *)fn);    //将文件名接在后面
-        ai_load_picfile(imgname, 30, 300, 500, 500, 1);
+        strcpy((char *)imgname, "0:/PICTURE/");    //复制路径(目录)
+        strcat((char *)imgname, (const char *)fn); //将文件名接在后面
+        printf("%s\n", imgname);
+        LCD_Fill(30, 300, 330, 600, WHITE);
+        ai_load_picfile(imgname, 30, 300, 300, 300, 1);
 
         key = audio_play_song(pname); //播放这个音频文件
 
-        if (key == KEY2_PRES)         //上一曲
+        if (key == KEY2_PRES) //上一曲
         {
             if (curindex)
                 curindex--;
@@ -252,26 +266,55 @@ void test_write_file()
         return;
     }
     res = f_close(&fil);
-    if (res) {
+    if (res)
+    {
         printf("Close file error : %d\r\n", res);
         return;
     }
 }
 
-int open_big_file(char *fname, FileWriter *fw) {
+int open_big_file(char *fname, FileWriter *fw)
+{
     FRESULT res = f_open(&(fw->fil), fname, FA_CREATE_ALWAYS | FA_WRITE);
     return res;
 }
 
-int write_data(u8 *data, int len, FileWriter *fw) {
+int write_data(u8 *data, int len, FileWriter *fw)
+{
     data[len] = '\0';
     int r_len;
     FRESULT res = f_write(&(fw->fil), data, sizeof(data), (void *)&r_len);
-    if (r_len != len || res) return res || 1;
-    else return res;
+    if (r_len != len || res)
+        return res || 1;
+    else
+        return res;
 }
 
-int end_data(FileWriter *fw) {
+int end_data(FileWriter *fw)
+{
     FRESULT res = f_close(&(fw->fil));
     return res;
+}
+
+void receive_music()
+{
+}
+
+void ui_show()
+{
+    // LCD_Color_Fill(0, 0, 170, 480, WHITE);
+    LCD_Clear(WHITE);
+
+    POINT_COLOR = RED;
+    LCD_ShowString(30, 50, 200, 16, 16, "Explorer STM32F4");
+    LCD_ShowString(30, 70, 200, 16, 16, "2021/1/7");
+    POINT_COLOR = BLUE; //设置字体为蓝色
+    LCD_ShowString(30, 90, 200, 16, 16, "LSENS_VAL:");
+
+    POINT_COLOR = BLUE;                                        //设置字体为蓝色
+    LCD_ShowString(30, 110, 200, 16, 16, "TEMPERATE: 00.00C"); //先在固定位置显示小数点
+
+    POINT_COLOR = RED;
+    Show_Str(30, 130, 200, 16, "KEY0:NEXT   KEY2:PREV", 16, 0);
+    Show_Str(30, 150, 200, 16, "KEY_UP:PAUSE/PLAY", 16, 0);
 }
