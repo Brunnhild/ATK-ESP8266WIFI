@@ -218,7 +218,7 @@ void music_player()
         strcpy((char *)imgname, "0:/PICTURE/");    //复制路径(目录)
         strcat((char *)imgname, (const char *)fn); //将文件名接在后面
         printf("%s\n", imgname);
-        LCD_Fill(30, 300, 330, 600, WHITE);
+        LCD_Fill(30, 280, 330, 600, WHITE);
         ai_load_picfile(imgname, 30, 300, 300, 300, 1);
 
         key = audio_play_song(pname); //播放这个音频文件

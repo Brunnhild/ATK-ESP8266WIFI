@@ -21,6 +21,7 @@
 #include "adc3.h"
 #include "lsens.h"
 #include "app.h"
+#include "timer.h"
 
 //ALIENTEK 探索者STM32F407开发板 实验19
 //内部温度传感器实验 -库函数版本
@@ -35,28 +36,29 @@ int DEVICE_ID = 1;
 int main(void)
 {
     u8 key, fontok = 0;
-    usart3_init(115200); //初始化串口3波特率为115200
-    KEY_Init();          //按键初始化
-    W25QXX_Init();       //初始化W25Q128
-    // tp_dev.init();				//初始化触摸屏
-    usmart_dev.init(168);                           //初始化USMART
-    my_mem_init(SRAMIN);                            //初始化内部内存池
-    my_mem_init(SRAMCCM);                           //初始化CCM内存池
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); //设置系统中断优先级分组2
     delay_init(168);                                //初始化延时函数
     uart_init(115200);                              //初始化串口波特率为115200
+    usart3_init(115200);                            //初始化串口3波特率为115200
+    LED_Init();                                     //初始化LED
+    LCD_Init();                                     //液晶初始化
+    Adc_Init();                                     //内部温度传感器ADC初始化
+    KEY_Init();                                     //按键初始化
+    W25QXX_Init();                                  //初始化W25Q128
+    tp_dev.init();                                  //初始化触摸屏
+    usmart_dev.init(168);                           //初始化USMART
+    my_mem_init(SRAMIN);                            //初始化内部内存池
+    my_mem_init(SRAMCCM);                           //初始化CCM内存池
 
-    LED_Init();               //初始化LED
-    LCD_Init();               //液晶初始化
-    Adc_Init();               //内部温度传感器ADC初始化
     W25QXX_Init();            //初始化W25Q128
     WM8978_Init();            //初始化WM8978
     WM8978_HPvol_Set(40, 40); //耳机音量设置
-    WM8978_SPKvol_Set(1);    //喇叭音量设置
+    WM8978_SPKvol_Set(1);     //喇叭音量设置
     exfuns_init();            //为fatfs相关变量申请内存
     f_mount(fs[0], "0:", 1);  //挂载SD卡
     f_mount(fs[1], "1:", 1);  //挂载FLASH.
     piclib_init();            //初始化画图
+
     key = KEY_Scan(0);
 
     if (key == KEY0_PRES) //强制校准
@@ -107,7 +109,7 @@ int main(void)
     }
     LCD_Clear(WHITE); //清屏
 
-    int run_greet = 0;
+    int run_greet = 1;
     // Start the server and client and send greetings
     if (DEVICE_ID == 1 && run_greet)
     {
@@ -212,6 +214,7 @@ int main(void)
         delay_ms(200);
     }
     ui_show();
+    TIM3_Int_Init(5000 - 1, 8400 - 1);
     while (1)
     {
         music_player();

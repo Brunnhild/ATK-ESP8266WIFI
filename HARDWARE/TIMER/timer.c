@@ -1,58 +1,111 @@
 #include "timer.h"
 #include "led.h"
+#include "adc.h"
+#include "delay.h"
+#include "lcd.h"
+#include "adc3.h"
+#include "lsens.h"
 //////////////////////////////////////////////////////////////////////////////////	 
-//±¾³ÌÐòÖ»¹©Ñ§Ï°Ê¹ÓÃ£¬Î´¾­×÷ÕßÐí¿É£¬²»µÃÓÃÓÚÆäËüÈÎºÎÓÃÍ¾
-//ALIENTEK STM32F407¿ª·¢°å
-//¶¨Ê±Æ÷ Çý¶¯´úÂë	   
-//ÕýµãÔ­×Ó@ALIENTEK
-//¼¼ÊõÂÛÌ³:www.openedv.com
-//´´½¨ÈÕÆÚ:2014/5/4
-//°æ±¾£ºV1.0
-//°æÈ¨ËùÓÐ£¬µÁ°æ±Ø¾¿¡£
-//Copyright(C) ¹ãÖÝÊÐÐÇÒíµç×Ó¿Æ¼¼ÓÐÏÞ¹«Ë¾ 2014-2024
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ñ§Ï°Ê¹ï¿½Ã£ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½Í¾
+//ALIENTEK STM32F407ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//ï¿½ï¿½Ê±ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½	   
+//ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½@ALIENTEK
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì³:www.openedv.com
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½:2014/5/4
+//ï¿½æ±¾ï¿½ï¿½V1.0
+//ï¿½ï¿½È¨ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ï¿½ï¿½
+//Copyright(C) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿Æ¼ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾ 2014-2024
 //All rights reserved									  
 ////////////////////////////////////////////////////////////////////////////////// 	 
 
-
+short temp; 
+u8 adcx;
 extern vu16 USART3_RX_STA;
 
-//¶¨Ê±Æ÷7ÖÐ¶Ï·þÎñ³ÌÐò		    
+//ï¿½ï¿½Ê±ï¿½ï¿½7ï¿½Ð¶Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½		    
 void TIM7_IRQHandler(void)
 { 	
-	if (TIM_GetITStatus(TIM7, TIM_IT_Update) != RESET)//ÊÇ¸üÐÂÖÐ¶Ï
+	if (TIM_GetITStatus(TIM7, TIM_IT_Update) != RESET)//ï¿½Ç¸ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
 	{	 			   
-		USART3_RX_STA|=1<<15;	//±ê¼Ç½ÓÊÕÍê³É
-		TIM_ClearITPendingBit(TIM7, TIM_IT_Update  );  //Çå³ýTIM7¸üÐÂÖÐ¶Ï±êÖ¾    
-		TIM_Cmd(TIM7, DISABLE);  //¹Ø±ÕTIM7 
+		USART3_RX_STA|=1<<15;	//ï¿½ï¿½Ç½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		TIM_ClearITPendingBit(TIM7, TIM_IT_Update  );  //ï¿½ï¿½ï¿½TIM7ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï±ï¿½Ö¾    
+		TIM_Cmd(TIM7, DISABLE);  //ï¿½Ø±ï¿½TIM7 
 	}	    
 }
  
-//Í¨ÓÃ¶¨Ê±Æ÷ÖÐ¶Ï³õÊ¼»¯
-//ÕâÀïÊ¼ÖÕÑ¡ÔñÎªAPB1µÄ2±¶£¬¶øAPB1Îª36M
-//arr£º×Ô¶¯ÖØ×°Öµ¡£
-//psc£ºÊ±ÖÓÔ¤·ÖÆµÊý		 
+//Í¨ï¿½Ã¶ï¿½Ê±ï¿½ï¿½ï¿½Ð¶Ï³ï¿½Ê¼ï¿½ï¿½
+//ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ñ¡ï¿½ï¿½ÎªAPB1ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½APB1Îª36M
+//arrï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½×°Öµï¿½ï¿½
+//pscï¿½ï¿½Ê±ï¿½ï¿½Ô¤ï¿½ï¿½Æµï¿½ï¿½		 
 void TIM7_Int_Init(u16 arr,u16 psc)
 {	
 	NVIC_InitTypeDef NVIC_InitStructure;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM7, ENABLE);//TIM7Ê±ÖÓÊ¹ÄÜ    
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM7, ENABLE);//TIM7Ê±ï¿½ï¿½Ê¹ï¿½ï¿½    
 	
-	//¶¨Ê±Æ÷TIM7³õÊ¼»¯
-	TIM_TimeBaseStructure.TIM_Period = arr; //ÉèÖÃÔÚÏÂÒ»¸ö¸üÐÂÊÂ¼þ×°Èë»î¶¯µÄ×Ô¶¯ÖØ×°ÔØ¼Ä´æÆ÷ÖÜÆÚµÄÖµ	
-	TIM_TimeBaseStructure.TIM_Prescaler =psc; //ÉèÖÃÓÃÀ´×÷ÎªTIMxÊ±ÖÓÆµÂÊ³ýÊýµÄÔ¤·ÖÆµÖµ
-	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; //ÉèÖÃÊ±ÖÓ·Ö¸î:TDTS = Tck_tim
-	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  //TIMÏòÉÏ¼ÆÊýÄ£Ê½
-	TIM_TimeBaseInit(TIM7, &TIM_TimeBaseStructure); //¸ù¾ÝÖ¸¶¨µÄ²ÎÊý³õÊ¼»¯TIMxµÄÊ±¼ä»ùÊýµ¥Î»
+	//ï¿½ï¿½Ê±ï¿½ï¿½TIM7ï¿½ï¿½Ê¼ï¿½ï¿½
+	TIM_TimeBaseStructure.TIM_Period = arr; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½×°ï¿½ï¿½î¶¯ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½×°ï¿½Ø¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Öµ	
+	TIM_TimeBaseStructure.TIM_Prescaler =psc; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎªTIMxÊ±ï¿½ï¿½Æµï¿½Ê³ï¿½ï¿½ï¿½ï¿½ï¿½Ô¤ï¿½ï¿½ÆµÖµ
+	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; //ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Ó·Ö¸ï¿½:TDTS = Tck_tim
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  //TIMï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½Ä£Ê½
+	TIM_TimeBaseInit(TIM7, &TIM_TimeBaseStructure); //ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½TIMxï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»
  
-	TIM_ITConfig(TIM7,TIM_IT_Update,ENABLE ); //Ê¹ÄÜÖ¸¶¨µÄTIM7ÖÐ¶Ï,ÔÊÐí¸üÐÂÖÐ¶Ï
+	TIM_ITConfig(TIM7,TIM_IT_Update,ENABLE ); //Ê¹ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½TIM7ï¿½Ð¶ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
 
 	 	  
 	NVIC_InitStructure.NVIC_IRQChannel = TIM7_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0 ;//ÇÀÕ¼ÓÅÏÈ¼¶0
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;		//×ÓÓÅÏÈ¼¶1
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQÍ¨µÀÊ¹ÄÜ
-	NVIC_Init(&NVIC_InitStructure);	//¸ù¾ÝÖ¸¶¨µÄ²ÎÊý³õÊ¼»¯VIC¼Ä´æÆ÷
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0 ;//ï¿½ï¿½Õ¼ï¿½ï¿½ï¿½È¼ï¿½0
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;		//ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½1
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQÍ¨ï¿½ï¿½Ê¹ï¿½ï¿½
+	NVIC_Init(&NVIC_InitStructure);	//ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½VICï¿½Ä´ï¿½ï¿½ï¿½
 	
 }
-	 
+	
+void TIM3_Int_Init(u16 arr,u16 psc)
+{
+	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3,ENABLE);  ///Ê¹ï¿½ï¿½TIM3Ê±ï¿½ï¿½
+	
+  TIM_TimeBaseInitStructure.TIM_Period = arr; 	//ï¿½Ô¶ï¿½ï¿½ï¿½×°ï¿½ï¿½Öµ
+	TIM_TimeBaseInitStructure.TIM_Prescaler=psc;  //ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Æµ
+	TIM_TimeBaseInitStructure.TIM_CounterMode=TIM_CounterMode_Up; //ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½Ä£Ê½
+	TIM_TimeBaseInitStructure.TIM_ClockDivision=TIM_CKD_DIV1; 
+	
+	TIM_TimeBaseInit(TIM3,&TIM_TimeBaseInitStructure);//ï¿½ï¿½Ê¼ï¿½ï¿½TIM3
+	
+	TIM_ITConfig(TIM3,TIM_IT_Update,ENABLE); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½3ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
+	TIM_Cmd(TIM3,ENABLE); //Ê¹ï¿½Ü¶ï¿½Ê±ï¿½ï¿½3
+	
+	NVIC_InitStructure.NVIC_IRQChannel=TIM3_IRQn; //ï¿½ï¿½Ê±ï¿½ï¿½3ï¿½Ð¶ï¿½
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0x01; //ï¿½ï¿½Õ¼ï¿½ï¿½ï¿½È¼ï¿½1
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority=0x03; //ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½3
+	NVIC_InitStructure.NVIC_IRQChannelCmd=ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+}
+
+//ï¿½ï¿½Ê±ï¿½ï¿½3ï¿½Ð¶Ï·ï¿½ï¿½ï¿½ï¿½ï¿½
+void TIM3_IRQHandler(void)
+{
+	if(TIM_GetITStatus(TIM3,TIM_IT_Update)==SET) //ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
+	{
+		temp=Get_Temprate();	//ï¿½Ãµï¿½ï¿½Â¶ï¿½Öµ 
+		if(temp<0)
+		{
+			temp=-temp;
+			LCD_ShowString(30+10*8,110,16,16,16,"-");	    //ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
+		}else LCD_ShowString(30+10*8,110,16,16,16," ");	//ï¿½Þ·ï¿½ï¿½ï¿½
+		
+		LCD_ShowxNum(30+11*8,110,temp/100,2,16,0);		//ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		LCD_ShowxNum(30+14*8,110,temp%100,2,16,0);		//ï¿½ï¿½Ê¾Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+		
+		
+		adcx=Lsens_Get_Val();
+		LCD_ShowxNum(30+10*8,90,adcx,3,16,0);//ï¿½ï¿½Ê¾ADCï¿½ï¿½Öµ 
+		LED1=!LED1;
+	}
+	TIM_ClearITPendingBit(TIM3,TIM_IT_Update);  //ï¿½ï¿½ï¿½ï¿½Ð¶Ï±ï¿½Ö¾Î»
+}
+ 
