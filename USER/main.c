@@ -5,7 +5,6 @@
 #include "lcd.h"
 #include "adc.h"
 #include "key.h"
-#include "usmart.h"
 #include "sram.h"
 #include "malloc.h"
 #include "w25qxx.h"
@@ -30,8 +29,6 @@
 //广州市星翼电子科技有限公司
 //作者：正点原子 @ALIENTEK
 
-char *peer_ip;
-int DEVICE_ID = 1;
 
 int main(void)
 {
@@ -111,7 +108,7 @@ int main(void)
 
     int run_greet = 1;
     // Start the server and client and send greetings
-    if (DEVICE_ID == 1 && run_greet)
+    if (get_device_id() == 1 && run_greet)
     {
         send_command_with_retry("AT+CWMODE=2", 200, 3, 1, NULL);
         send_command_with_retry("AT+CWSAP=\"ATK-ESP8266\",\"12345678\",1,4", 200, 3, 1, NULL);
@@ -119,7 +116,7 @@ int main(void)
         send_command_with_retry("AT+CIPSERVER=1,8086", 200, 3, 1, NULL);
 
         // Wait for the peer to join
-        peer_ip = (char *)malloc(20);
+        char *peer_ip = (char *)malloc(20);
         char res[50];
         while (1)
         {
@@ -127,52 +124,77 @@ int main(void)
             extract_peer_ip(res, peer_ip);
             if (peer_ip[3] == '.' && peer_ip[7] == '.')
                 break;
-            delay_ms(500);
+            delay_ms(1000);
         }
         printf("The peer ip is %s\n", peer_ip);
+        set_peer_ip(peer_ip);
 
-        char *cmd_tmp = (char *)malloc(100);
-        sprintf(cmd_tmp, "AT+CIPSTART=0,\"TCP\",\"%s\",8086", peer_ip);
-        send_command_with_retry(cmd_tmp, 500, 5, 1, NULL);
+        int connection_established = 0;
+        while (1) {
+            char greeting_res[50] = "";
 
-        send_command_with_retry("AT+CIPSEND=0,17", 200, 3, 1, NULL);
-        send_command_with_retry("the LORD your God", 200, 3, 1, NULL);
-        send_command_with_retry("AT+CIPCLOSE=0", 200, 3, 1, NULL);
-        printf("Greeting sent\n");
+            char *cmd_tmp = (char *)malloc(100);
+            sprintf(cmd_tmp, "AT+CIPSTART=0,\"TCP\",\"%s\",8086", peer_ip);
+            int _res;
+            if (!connection_established) {
+                _res = send_command_with_retry(cmd_tmp, 500, 5, 1, NULL);
+                if (_res) continue;
+                else connection_established = 1;
+            }
+            _res = send_command_with_retry("AT+CIPSEND=0,17", 200, 3, 1, NULL);
+            if (_res) continue;
+            send_command_util_success("the LORD your God", 500, 1, NULL);
+            printf("Greeting sent\n");
 
-        //		wait_for_data(1, res);
-        printf("Greeting from %s: %s\n", peer_ip, res);
+            _res = wait_for_data_with_timeout(1, greeting_res, 10000);
+            if (_res) {
+                printf("Get response from %s: %s\n", peer_ip, greeting_res);
+                break;
+            }
+        }
+        
     }
-    else if (DEVICE_ID == 2 && run_greet)
+    else if (get_device_id() == 2 && run_greet)
     {
         send_command_with_retry("AT+CWMODE=3", 200, 3, 1, NULL);
-        send_command_util_success("AT+CWJAP=\"ATK-ESP8266\",\"12345678\",1,4", 500, 1, NULL);
+        send_command_util_success("AT+CWJAP=\"ATK-ESP8266\",\"12345678\"", 500, 1, NULL);
         send_command_with_retry("AT+CIPMUX=1", 200, 3, 1, NULL);
         send_command_with_retry("AT+CIPSERVER=1,8086", 200, 3, 1, NULL);
 
-        peer_ip = (char *)malloc(20);
+        char *peer_ip = (char *)malloc(20);
         char res[50];
         while (1)
         {
             send_command_util_success("AT+CIPAP?", 200, 1, res);
-            extract_peer_ip(res, peer_ip);
+            extarct_ap_ip(res, peer_ip);
             if (peer_ip[3] == '.' && peer_ip[7] == '.')
                 break;
             delay_ms(500);
         }
         printf("The peer ip is %s\n", peer_ip);
-
-        char *cmd_tmp = (char *)malloc(100);
-        sprintf(cmd_tmp, "AT+CIPSTART=0,\"TCP\",\"%s\",8086", peer_ip);
-        send_command_with_retry(cmd_tmp, 500, 5, 1, NULL);
-
+        set_peer_ip(peer_ip);
+        // Make sure previous response is erased
+        erase_data();
         wait_for_data(1, res);
         printf("Greeting from %s: %s\n", peer_ip, res);
 
-        send_command_with_retry("AT+CIPSEND=0,17", 200, 3, 1, NULL);
-        send_command_with_retry("the LORD your God", 200, 3, 1, NULL);
-        send_command_with_retry("AT+CIPCLOSE=0", 200, 3, 1, NULL);
-
+        int connection_established = 0;
+        while (1) {
+            int _res;
+            if (!connection_established) {
+                char *cmd_tmp = (char *)malloc(100);
+                sprintf(cmd_tmp, "AT+CIPSTART=0,\"TCP\",\"%s\",8086", peer_ip);
+                _res = send_command_with_retry(cmd_tmp, 500, 5, 1, NULL);
+                if (_res) continue;
+                else connection_established = 1;
+            }
+            
+            _res = send_command_with_retry("AT+CIPSEND=0,17", 200, 3, 1, NULL);
+            if (_res) continue;
+            send_command_util_success("the LORD your God", 500, 1, NULL);
+            break;
+        }
+        
         printf("Greeting sent\n");
     }
     LCD_Clear(WHITE); //清屏
@@ -180,30 +202,6 @@ int main(void)
     u8 adcx;
     Lsens_Init(); //初始化光敏传感器
     short temp;
-
-    // while (1)
-    // {
-    //     adcx = Lsens_Get_Val();
-    //     LCD_ShowxNum(30 + 10 * 8, 130, adcx, 3, 16, 0); //显示ADC的值
-    //     LED0 = !LED0;
-    //     temp = Get_Temprate(); //得到温度值
-    //     if (temp < 0)
-    //     {
-    //         temp = -temp;
-    //         LCD_ShowString(30 + 10 * 8, 140, 16, 16, 16, "-"); //显示负号
-    //     }
-    //     else
-    //         LCD_ShowString(30 + 10 * 8, 140, 16, 16, 16, " "); //无符号
-
-    //     LCD_ShowxNum(30 + 11 * 8, 150, temp / 100, 2, 16, 0); //显示整数部分
-    //     LCD_ShowxNum(30 + 14 * 8, 150, temp % 100, 2, 16, 0); //显示小数部分
-
-    //     printf("Temperature now is: %d\n", temp);
-    //     printf("Lightness now is: %d\n", adcx);
-    //     printf("\n");
-
-    //     delay_ms(250);
-    // }
 
     POINT_COLOR = RED;
     while (font_init()) //检查字库

@@ -1,5 +1,21 @@
 #include "app.h"
 
+char *peer_ip;
+int DEVICE_ID = 1;
+
+
+char *get_peer_ip(void) {
+    return peer_ip;
+}
+
+int get_device_id(void) {
+    return DEVICE_ID;
+}
+
+void set_peer_ip(char *p) {
+    peer_ip = p;
+}
+
 int get_response(int clear, char *res)
 {
     if (USART3_RX_STA & 0X8000)
@@ -70,6 +86,19 @@ void wait_for_data(int clear, char *res)
     }
 }
 
+int wait_for_data_with_timeout(int clear, char *res, int time_out) {
+    int flag = 0, time_count = 0;
+    while (flag == 0)
+    {
+        if (get_response(clear, res) == 1)
+            flag = 1;
+        delay_ms(200);
+        time_count += 200;
+        if (time_count > time_out) return 0;
+    }
+    return 1;
+}
+
 void extract_peer_ip(char *res, char *ip)
 {
     int len = strlen(res);
@@ -81,6 +110,23 @@ void extract_peer_ip(char *res, char *ip)
             flag = 1;
         }
         else if (res[i] == ',')
+            break;
+        else if (flag == 0)
+            continue;
+        ip[j++] = res[i];
+    }
+}
+
+void extarct_ap_ip(char *res, char *ip) {
+    int len = strlen(res);
+    int i = 0, j = 0, flag = 0;
+    for (; i < len; i++)
+    {
+        if (flag == 0 && res[i] == '1')
+        {
+            flag = 1;
+        }
+        else if (res[i] == '\"' && flag == 1)
             break;
         else if (flag == 0)
             continue;
@@ -167,7 +213,7 @@ void music_player()
                 break; //错误了/到末尾了,退出
             fn = (u8 *)(*wavfileinfo.lfname ? wavfileinfo.lfname : wavfileinfo.fname);
             res = f_typetell(fn);
-            if ((res & 0XF0) == T_WAV) //取高四位,看看是不是音乐文件
+            if ((res & 0XFF) == T_WAV) //取高四位,看看是不是音乐文件
             {
                 wavindextbl[curindex] = temp; //记录索引
                 curindex++;
@@ -194,6 +240,7 @@ void music_player()
         }
     }
 
+    u8 music_dir_res, picture_dir_res;
     curindex = 0;                                        //从0开始显示
     res = f_opendir(&wavdir, (const TCHAR *)"0:/MUSIC"); //打开目录
     res = f_opendir(&imgdir, (const TCHAR *)"0:/PICTURE");
@@ -236,6 +283,11 @@ void music_player()
             if (curindex >= totwavnum)
                 curindex = 0; //到末尾的时候,自动从头开始
         }
+        else if (key == KEY1_PRES) {
+            receive_music();
+        } else if (key == WKUP_PRES) {
+            send_music();
+        }
         else
             break; //产生了错误
     }
@@ -273,31 +325,39 @@ void test_write_file()
     }
 }
 
-int open_big_file(char *fname, FileWriter *fw)
+int open_big_file(char *fname, FIL *fp)
 {
-    FRESULT res = f_open(&(fw->fil), fname, FA_CREATE_ALWAYS | FA_WRITE);
+    FRESULT res = f_open(fp, fname, FA_CREATE_ALWAYS | FA_WRITE | FA_READ);
     return res;
 }
 
-int write_data(u8 *data, int len, FileWriter *fw)
+int write_data(u8 *data, int len, FIL *fp)
 {
     data[len] = '\0';
     int r_len;
-    FRESULT res = f_write(&(fw->fil), data, sizeof(data), (void *)&r_len);
+    FRESULT res = f_write(fp, data, sizeof(data), (void *)&r_len);
     if (r_len != len || res)
         return res || 1;
     else
         return res;
 }
 
-int end_data(FileWriter *fw)
+int read_data(u8 *data, int chalk_size, FIL *fp) {
+    return 0;
+}
+
+int end_data(FIL *fp)
 {
-    FRESULT res = f_close(&(fw->fil));
+    FRESULT res = f_close(fp);
     return res;
 }
 
 void receive_music()
 {
+}
+
+void send_music() {
+
 }
 
 void ui_show()
@@ -317,4 +377,29 @@ void ui_show()
     POINT_COLOR = RED;
     Show_Str(30, 130, 200, 16, "KEY0:NEXT   KEY2:PREV", 16, 0);
     Show_Str(30, 150, 200, 16, "KEY_UP:PAUSE/PLAY", 16, 0);
+}
+
+int send_packet(char *s, int len) {
+    char cmd[30];
+    char res[30];
+    sprintf(cmd, "AT+CIPSEND=0,%d", len);
+    send_command_util_success(cmd, 500, 1, NULL);
+    send_command_util_success(s, 500, 1, NULL);
+    wait_for_data(1, res);
+    return 1;
+}
+
+int wait_for_packet(char *res) {
+    while (1) {
+        if (USART3_RX_STA & 0X8000)
+        {
+            USART3_RX_BUF[USART3_RX_STA & 0X7FFF] = 0;
+            sprintf(res, "%s", USART3_RX_BUF);
+            USART3_RX_STA = 0;
+        }
+    }
+    
+    wait_for_data(1, res);
+    send_command_util_success("AT+CIPSEND=0,8", 500, 1, NULL);
+    send_command_util_success("received", 500, 1, NULL);
 }
