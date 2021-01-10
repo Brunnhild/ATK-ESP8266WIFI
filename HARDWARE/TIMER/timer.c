@@ -5,6 +5,7 @@
 #include "lcd.h"
 #include "adc3.h"
 #include "lsens.h"
+#include "app.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //������ֻ��ѧϰʹ�ã�δ���������ɣ��������������κ���;
 //ALIENTEK STM32F407������
@@ -13,7 +14,7 @@
 //������̳:www.openedv.com
 //��������:2014/5/4
 //�汾��V1.0
-//��Ȩ���У�����ؾ���
+//��Ȩ���У�����ؾ���?
 //Copyright(C) �������������ӿƼ����޹�˾ 2014-2024
 //All rights reserved									  
 ////////////////////////////////////////////////////////////////////////////////// 	 
@@ -22,7 +23,7 @@ short temp;
 u8 adcx;
 extern vu16 USART3_RX_STA;
 
-//��ʱ��7�жϷ������		    
+//��ʱ��7�жϷ������?		    
 void TIM7_IRQHandler(void)
 { 	
 	if (TIM_GetITStatus(TIM7, TIM_IT_Update) != RESET)//�Ǹ����ж�
@@ -45,11 +46,11 @@ void TIM7_Int_Init(u16 arr,u16 psc)
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM7, ENABLE);//TIM7ʱ��ʹ��    
 	
 	//��ʱ��TIM7��ʼ��
-	TIM_TimeBaseStructure.TIM_Period = arr; //��������һ�������¼�װ�����Զ���װ�ؼĴ������ڵ�ֵ	
+	TIM_TimeBaseStructure.TIM_Period = arr; //��������һ�������¼�װ���?���Զ���װ�ؼĴ������ڵ�ֵ	
 	TIM_TimeBaseStructure.TIM_Prescaler =psc; //����������ΪTIMxʱ��Ƶ�ʳ�����Ԥ��Ƶֵ
 	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; //����ʱ�ӷָ�:TDTS = Tck_tim
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  //TIM���ϼ���ģʽ
-	TIM_TimeBaseInit(TIM7, &TIM_TimeBaseStructure); //����ָ���Ĳ�����ʼ��TIMx��ʱ�������λ
+	TIM_TimeBaseInit(TIM7, &TIM_TimeBaseStructure); //����ָ���Ĳ�����ʼ��TIMx��ʱ��������?
  
 	TIM_ITConfig(TIM7,TIM_IT_Update,ENABLE ); //ʹ��ָ����TIM7�ж�,���������ж�
 
@@ -86,10 +87,10 @@ void TIM3_Int_Init(u16 arr,u16 psc)
 	NVIC_Init(&NVIC_InitStructure);
 }
 
-//��ʱ��3�жϷ�����
+// ADC handler
 void TIM3_IRQHandler(void)
 {
-	if(TIM_GetITStatus(TIM3,TIM_IT_Update)==SET) //����ж�
+	if(TIM_GetITStatus(TIM3,TIM_IT_Update)==SET) //����ж�?
 	{
 		temp=Get_Temprate();	//�õ��¶�ֵ 
 		if(temp<0)
@@ -106,6 +107,5 @@ void TIM3_IRQHandler(void)
 		LCD_ShowxNum(30+10*8,90,adcx,3,16,0);//��ʾADC��ֵ 
 		LED1=!LED1;
 	}
-	TIM_ClearITPendingBit(TIM3,TIM_IT_Update);  //����жϱ�־λ
+	TIM_ClearITPendingBit(TIM3,TIM_IT_Update);  //����жϱ�־�?
 }
- 
