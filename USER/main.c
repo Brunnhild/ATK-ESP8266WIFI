@@ -106,18 +106,20 @@ int main(void)
     }
     LCD_Clear(WHITE); //«Â∆¡
 
-    int run_greet = 1;
+    int run_greet = 1, greet_cnt = 0, packet_interval = 2000;
+    char peer_ip[20], res[50], cmd_tmp[100], greeting_res[50], greet_text[30];
+
     // Start the server and client and send greetings
     if (get_device_id() == 1 && run_greet)
     {
         send_command_with_retry("AT+CWMODE=2", 200, 3, 1, NULL);
-        send_command_with_retry("AT+CWSAP=\"ATK-ESP8266\",\"12345678\",1,4", 200, 3, 1, NULL);
+        send_command_with_retry("AT+RST", 200, 3, 1, NULL);
+        delay_ms(5000);
         send_command_with_retry("AT+CIPMUX=1", 200, 3, 1, NULL);
         send_command_with_retry("AT+CIPSERVER=1,8086", 200, 3, 1, NULL);
+        send_command_with_retry("AT+CWSAP=\"ATK WIFI\",\"12345678\",1,4", 200, 3, 1, NULL);
 
         // Wait for the peer to join
-        char *peer_ip = (char *)malloc(20);
-        char res[50];
         while (1)
         {
             send_command_util_success("AT+CWLIF", 200, 1, res);
@@ -128,74 +130,66 @@ int main(void)
         }
         printf("The peer ip is %s\n", peer_ip);
         set_peer_ip(peer_ip);
+        // Wait for the peer to join
+        delay_ms(5000);
 
         int connection_established = 0;
         while (1) {
-            char greeting_res[50] = "";
 
-            char *cmd_tmp = (char *)malloc(100);
-            sprintf(cmd_tmp, "AT+CIPSTART=0,\"TCP\",\"%s\",8086", peer_ip);
+            greeting_res[0] = 0;
             int _res;
+
             if (!connection_established) {
-                _res = send_command_with_retry(cmd_tmp, 500, 5, 1, NULL);
-                if (_res) continue;
+                sprintf(cmd_tmp, "AT+CIPSTART=0,\"TCP\",\"%s\",8086,1000", peer_ip);
+                _res = send_command_with_retry(cmd_tmp, 400, 5, 1, NULL);
+                if (!_res) continue;
                 else connection_established = 1;
             }
-            _res = send_command_with_retry("AT+CIPSEND=0,17", 200, 3, 1, NULL);
-            if (_res) continue;
-            send_command_util_success("the LORD your God", 500, 1, NULL);
-            printf("Greeting sent\n");
 
-            _res = wait_for_data_with_timeout(1, greeting_res, 10000);
-            if (_res) {
-                printf("Get response from %s: %s\n", peer_ip, greeting_res);
-                break;
+            while (1) {
+                _res = send_command_with_retry("AT+CIPSEND=0,9", 200, 3, 1, NULL);
+                if (!_res) continue;
+                delay_ms(100);
+                sprintf(greet_text, "Greet: %02d", greet_cnt);
+                _res = send_command_with_retry(greet_text, 2000, 1, 1, NULL);
+                if (_res) break;
             }
+
+            printf("Greeting sent\n");
+            greet_cnt++;
+
+            wait_for_data(1, res);
+            printf("Greeting from %s: %s\n", peer_ip, res);
+            delay_ms(packet_interval);
         }
         
     }
     else if (get_device_id() == 2 && run_greet)
     {
-        send_command_with_retry("AT+CWMODE=3", 200, 3, 1, NULL);
-        send_command_util_success("AT+CWJAP=\"ATK-ESP8266\",\"12345678\"", 500, 1, NULL);
+        send_command_with_retry("AT+CWMODE=1", 200, 3, 1, NULL);
+        send_command_with_retry("AT+RST", 200, 3, 1, NULL);
+        delay_ms(5000);
         send_command_with_retry("AT+CIPMUX=1", 200, 3, 1, NULL);
         send_command_with_retry("AT+CIPSERVER=1,8086", 200, 3, 1, NULL);
+        send_command_with_retry("AT+CIPSTO=1200", 200, 3, 1, NULL);
+        send_command_util_success("AT+CWJAP=\"ATK WIFI\",\"12345678\"", 2000, 1, NULL);
 
-        char *peer_ip = (char *)malloc(20);
-        char res[50];
-        while (1)
-        {
-            send_command_util_success("AT+CIPAP?", 200, 1, res);
-            extarct_ap_ip(res, peer_ip);
-            if (peer_ip[3] == '.' && peer_ip[7] == '.')
-                break;
-            delay_ms(500);
-        }
-        printf("The peer ip is %s\n", peer_ip);
-        set_peer_ip(peer_ip);
-        // Make sure previous response is erased
-        erase_data();
-        wait_for_data(1, res);
-        printf("Greeting from %s: %s\n", peer_ip, res);
-
-        int connection_established = 0;
         while (1) {
+            wait_for_data(1, res);
+            printf("Greeting from %s: %s\n", peer_ip, res);
+            delay_ms(packet_interval);
             int _res;
-            if (!connection_established) {
-                char *cmd_tmp = (char *)malloc(100);
-                sprintf(cmd_tmp, "AT+CIPSTART=0,\"TCP\",\"%s\",8086", peer_ip);
-                _res = send_command_with_retry(cmd_tmp, 500, 5, 1, NULL);
-                if (_res) continue;
-                else connection_established = 1;
+            while (1) {
+                _res = send_command_with_retry("AT+CIPSEND=0,9", 200, 3, 1, NULL);
+                if (!_res) continue;
+                sprintf(greet_text, "Greet: %02d", greet_cnt);
+                _res = send_command_with_retry(greet_text, 2000, 1, 1, NULL);
+                if (_res) break;
             }
             
-            _res = send_command_with_retry("AT+CIPSEND=0,17", 200, 3, 1, NULL);
-            if (_res) continue;
-            send_command_util_success("the LORD your God", 500, 1, NULL);
-            break;
+            printf("Greeting sent\n");
+            greet_cnt++;
         }
-        
-        printf("Greeting sent\n");
     }
     LCD_Clear(WHITE); //«Â∆¡
 
