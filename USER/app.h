@@ -26,6 +26,7 @@
 
 char *get_peer_ip(void);
 int get_device_id(void);
+int get_run_greet(void);
 
 void set_peer_ip(char *);
 
@@ -45,12 +46,14 @@ int open_big_file(char *fname, FIL *fp);
 int write_data(u8 *data, int len, FIL *fp);
 int read_data(u8 *data, int chalk_size, FIL *fp);
 int close_file(FIL *fw);
-void send_music(void);
 
-void receive_music(void);
 void ui_show(void);
 
 void send_packet(char *s, int len);
 void wait_for_packet(char *res);
+
+int get_music_file_names(char **music_names, char **picture_names);
+void send_music(char **music_names, char **picture_names);
+void receive_music(void);
 
 #endif

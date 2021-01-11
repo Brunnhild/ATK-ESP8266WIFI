@@ -106,7 +106,7 @@ int main(void)
     }
     LCD_Clear(WHITE); //«Â∆¡
 
-    int run_greet = 1, greet_cnt = 0;
+    int run_greet = get_run_greet(), greet_cnt = 0;
     char peer_ip[20], res[50], cmd_tmp[100], greeting_res[50], greet_text[30];
 
     // Start the server and client and send greetings
