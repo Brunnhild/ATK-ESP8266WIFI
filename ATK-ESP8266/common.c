@@ -61,6 +61,7 @@ u8* atk_8266_check_cmd(u8 *str)
 	if(USART3_RX_STA&0X8000)		//接收到一次数据了
 	{ 
 		USART3_RX_BUF[USART3_RX_STA&0X7FFF]=0;//添加结束符
+		printf("\nGot ack: \"%s\"\n", USART3_RX_BUF);
 		strx=strstr((const char*)USART3_RX_BUF,(const char*)str);
 	} 
 	return (u8*)strx;
@@ -85,7 +86,7 @@ u8 atk_8266_send_cmd(u8 *cmd,u8 *ack,u16 waittime)
 			{
 				if(atk_8266_check_cmd(ack))
 				{
-					printf("ack:%s\r\n",(u8*)ack);
+					// printf("ack:%s\r\n",(u8*)ack);
 					break;//得到有效数据 
 				}
 					USART3_RX_STA=0;

@@ -40,8 +40,10 @@ int send_command_with_retry(char *cmd, int timeout, int retry, int erase, char *
     int flag = 0, cnt = 0;
     while (flag == 0 && cnt < retry)
     {
-        if (atk_8266_send_cmd((u8 *)cmd, (u8 *)"OK", timeout + cnt * 200) == 0)
+        if (atk_8266_send_cmd((u8 *)cmd, (u8 *)"OK", timeout + cnt * 200) == 0) {
             flag = 1;
+            break;
+        }
         cnt++;
         printf("Command %s failed, retrying...\n", cmd);
     }
