@@ -106,7 +106,7 @@ int main(void)
     }
     LCD_Clear(WHITE); //«Â∆¡
 
-    int run_greet = 1, greet_cnt = 0, packet_interval = 2000;
+    int run_greet = 1, greet_cnt = 0;
     char peer_ip[20], res[50], cmd_tmp[100], greeting_res[50], greet_text[30];
 
     // Start the server and client and send greetings
@@ -160,7 +160,7 @@ int main(void)
 
             wait_for_data(1, res);
             printf("Greeting from %s: %s\n", peer_ip, res);
-            delay_ms(packet_interval);
+            delay_ms(PACKET_INTERVAL);
         }
         
     }
@@ -177,7 +177,7 @@ int main(void)
         while (1) {
             wait_for_data(1, res);
             printf("Greeting from %s: %s\n", peer_ip, res);
-            delay_ms(packet_interval);
+            delay_ms(PACKET_INTERVAL);
             int _res;
             while (1) {
                 _res = send_command_with_retry("AT+CIPSEND=0,9", 200, 3, 1, NULL);

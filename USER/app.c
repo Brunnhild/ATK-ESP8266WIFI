@@ -381,27 +381,37 @@ void ui_show()
     Show_Str(30, 150, 200, 16, "KEY_UP:PAUSE/PLAY", 16, 0);
 }
 
-int send_packet(char *s, int len) {
-    char cmd[30];
-    char res[30];
+void send_packet(char *s, int len) {
+    char cmd[30], res[30];
+    int cmd_res;
     sprintf(cmd, "AT+CIPSEND=0,%d", len);
-    send_command_util_success(cmd, 500, 1, NULL);
-    send_command_util_success(s, 500, 1, NULL);
+    while (1) {
+        cmd_res = send_command_with_retry(cmd, 200, 3, 1, NULL);
+        if (!cmd_res) continue;
+        cmd_res = send_command_with_retry(s, 2000, 1, 1, NULL);
+        if (cmd_res) break;
+    }
     wait_for_data(1, res);
-    return 1;
 }
 
-int wait_for_packet(char *res) {
-    while (1) {
-        if (USART3_RX_STA & 0X8000)
-        {
-            USART3_RX_BUF[USART3_RX_STA & 0X7FFF] = 0;
-            sprintf(res, "%s", USART3_RX_BUF);
-            USART3_RX_STA = 0;
-        }
+// Be sure no data is already received
+void wait_for_packet(char *res) {
+    char buffer[MAX_PACKET_LEN + 1];
+    erase_data();
+    wait_for_data(1, buffer);
+    delay_ms(PACKET_INTERVAL);
+
+    int flag = 0, i = 0, cmd_res;
+    while (buffer[i] != 0) {
+        if (buffer[i] == ':') flag = 1;
+        if (flag) res[i] = buffer[i];
+        i++;
     }
-    
-    wait_for_data(1, res);
-    send_command_util_success("AT+CIPSEND=0,8", 500, 1, NULL);
-    send_command_util_success("received", 500, 1, NULL);
+    res[i] = 0;
+    while (1) {
+        cmd_res = send_command_with_retry("AT+CIPSEND=0,2", 200, 3, 1, NULL);
+        if (!cmd_res) continue;
+        cmd_res = send_command_with_retry("OK", 2000, 1, 1, NULL);
+        if (cmd_res) break;
+    }
 }

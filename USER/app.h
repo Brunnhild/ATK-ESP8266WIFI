@@ -22,6 +22,7 @@
 #include "string.h"
 
 #define MAX_PACKET_LEN 256
+#define PACKET_INTERVAL 2000
 
 char *get_peer_ip(void);
 int get_device_id(void);
@@ -49,7 +50,7 @@ void send_music(void);
 void receive_music(void);
 void ui_show(void);
 
-int send_packet(char *s, int len);
-int wait_for_packet(char *res);
+void send_packet(char *s, int len);
+void wait_for_packet(char *res);
 
 #endif
