@@ -53,6 +53,10 @@ void send_packet(char *s, int len);
 void wait_for_packet(char *res);
 
 int get_music_file_names(char **music_names, char **picture_names);
+void extract_fname(char *res, char *fname);
+int extract_end(char *res);
+void receive_picture(void);
+void send_picture(char **music_names, char **picture_names);
 void send_music(char **music_names, char **picture_names);
 void receive_music(void);
 

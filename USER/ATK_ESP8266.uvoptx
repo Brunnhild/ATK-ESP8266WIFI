@@ -211,9 +211,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>190</LineNumber>
+          <LineNumber>224</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134287530</Address>
+          <Address>134287384</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -222,7 +222,7 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>D:\Workspace\鍗曠墖鏈轰笌宓屽叆寮忕郴缁?ATK-ESP8266WIFI\USER\app.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\ATK_ESP8266\app.c\190</Expression>
+          <Expression>\\ATK_ESP8266\app.c\224</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -245,6 +245,11 @@
           <count>3</count>
           <WinNumber>1</WinNumber>
           <ItemText>wavindextbl</ItemText>
+        </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>music_names[0]</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
@@ -293,7 +298,7 @@
 
   <Group>
     <GroupName>USER</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -673,7 +678,7 @@
 
   <Group>
     <GroupName>FWLIB</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>

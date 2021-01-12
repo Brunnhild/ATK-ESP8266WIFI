@@ -117,7 +117,7 @@ int main(void)
         delay_ms(5000);
         send_command_with_retry("AT+CIPMUX=1", 200, 3, 1, NULL);
         send_command_with_retry("AT+CIPSERVER=1,8086", 200, 3, 1, NULL);
-        send_command_with_retry("AT+CWSAP=\"ATK WIFI\",\"12345678\",1,4", 200, 3, 1, NULL);
+        // send_command_with_retry("AT+CWSAP=\"ATK WIFI\",\"12345678\",1,4", 200, 3, 1, NULL);
 
         // Wait for the peer to join
         while (1)
@@ -157,6 +157,7 @@ int main(void)
 
             printf("Greeting sent\n");
             greet_cnt++;
+            if (greet_cnt == 2) break;
 
             wait_for_data(1, res);
             printf("Greeting from %s: %s\n", peer_ip, res);
@@ -172,11 +173,12 @@ int main(void)
         send_command_with_retry("AT+CIPMUX=1", 200, 3, 1, NULL);
         send_command_with_retry("AT+CIPSERVER=1,8086", 200, 3, 1, NULL);
         send_command_with_retry("AT+CIPSTO=1200", 200, 3, 1, NULL);
-        send_command_util_success("AT+CWJAP=\"ATK WIFI\",\"12345678\"", 2000, 1, NULL);
+        // send_command_util_success("AT+CWJAP=\"ATK WIFI\",\"12345678\"", 2000, 1, NULL);
 
         while (1) {
             wait_for_data(1, res);
             printf("Greeting from %s: %s\n", peer_ip, res);
+            if (greet_cnt == 1) break;
             delay_ms(PACKET_INTERVAL);
             int _res;
             while (1) {
@@ -189,6 +191,7 @@ int main(void)
             
             printf("Greeting sent\n");
             greet_cnt++;
+
         }
     }
     LCD_Clear(WHITE); //«Â∆¡

@@ -218,6 +218,10 @@ u8 wav_play_song(u8* fname)
 					while(1)
 					{
 						key=KEY_Scan(0); 
+						if (key == WKUP_PRES || key == KEY1_PRES) {
+							res = key;
+							break;
+						}
 						if(key==WKUP_PRES)//ÔÝÍ£
 						{
 							if(audiodev.status&0X01)audiodev.status&=~(1<<0);

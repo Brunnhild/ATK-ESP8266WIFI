@@ -2,7 +2,7 @@
 
 char *peer_ip;
 int DEVICE_ID = 1;
-int run_greet = 0;
+int run_greet = 1;
 
 
 char *get_peer_ip(void) {
@@ -256,9 +256,9 @@ void music_player()
                 curindex = 0; //到末尾的时候,自动从头开始
         }
         else if (key == KEY1_PRES) {
-            receive_music();
+            receive_picture();
         } else if (key == WKUP_PRES) {
-            send_music(music_names, picture_names);
+            send_picture(music_names, picture_names);
         }
         else
             break; //产生了错误
@@ -268,7 +268,7 @@ void music_player()
 void test_write_file()
 {
     FIL fil;
-    char fname[20] = "0:/test.txt";
+    char fname[20] = "0:/PICTURE/1.jpg";
     char wtext[20] = "Test text";
     u32 cnt;
 
@@ -319,6 +319,127 @@ int end_data(FIL *fp)
     return res;
 }
 
+void extract_fname(char *res, char *fname)
+{
+    int len = strlen(res);
+    int i = 2, j = 0, flag = 0;
+    for (; i < len; i++)
+    {
+        if (flag == 0 && res[i - 1] == 'E' && res[i] == '/')
+        {
+            flag = 1;
+        }
+        else if (res[i - 2] == ('j') && res[i - 1] == ('p') && res[i] == ('g'))
+        {
+            flag = 0;
+        }
+        else if (flag == 0)
+            continue;
+        fname[j++] = res[i];
+    }
+    return;
+}
+
+int extract_end(char *res)
+{
+    int len = strlen(res);
+    int i = 0;
+    for (; i < len; i++)
+    {
+        if (res[i - 2] == 'E' && res[i - 1] == 'N' && res[i] == 'D')
+        {
+            return i - 3;
+        }
+    }
+    return 256;
+}
+
+void receive_picture()
+{
+    LCD_Fill(30, 280, 330, 600, WHITE);
+    LCD_ShowString(30, 300, 200, 16, 16, "RECEIVING...");
+    FIL fil;
+    char *res = (char *) mymalloc(SRAMIN, MAX_PACKET_LEN + 1);
+    u32 *cnt;
+    FRESULT res1;
+    int i;
+
+    wait_for_packet(res);
+
+    res1 = f_open(&fil, res, FA_CREATE_ALWAYS | FA_WRITE);
+    res[0] = 0;
+
+    if (res1)
+    {
+        printf("Open file error : %d\r\n", res1);
+        return;
+    }
+    do
+    {
+        wait_for_packet(res);
+        i = extract_end(res);
+        if (i == -1)
+            break;
+        res1 = f_write(&fil, res, i, (void *)&cnt);
+        if (res1)
+        {
+            printf("Write file error : %d\r\n", res1);
+            return;
+        }
+    } while (i == 256);
+
+    res1 = f_close(&fil);
+    if (res1)
+    {
+        printf("Close file error : %d\r\n", res1);
+        return;
+    }
+}
+
+// 可以用send_packet和wait_for_packet来收发数据包，一个数据包最大长度是256个字节。
+// 使用FATFS的读写来读取与写入文件，可以参考test_write_file()，这个函数我测过了，其它的还没测过
+void send_picture(char **music_names, char **picture_names)
+{
+    LCD_Fill(30, 280, 330, 600, WHITE);
+    LCD_ShowString(30, 300, 200, 16, 16, "SEND...");
+    FIL fil;
+    char *fname;
+    char rtext[MAX_PACKET_LEN + 1];
+    u32 cnt, fsize;
+    long int i;
+    FRESULT res;
+
+    fname = picture_names[0];
+    send_packet(fname, strlen(fname));
+    res = f_open(&fil, fname, FA_OPEN_EXISTING | FA_READ);
+    if (res)
+    {
+        printf("Open file error : %d\r\n", res);
+        return;
+    }
+    fsize = fil.fsize;
+    for (i = 0; i <= fsize / MAX_PACKET_LEN; i++)
+    {
+        res = f_read(&fil, rtext, MAX_PACKET_LEN, (void *)&cnt);
+        rtext[cnt] = 0;
+        if (res)
+        {
+            printf("Read file error : %d\r\n", res);
+            return;
+        }
+        printf("%d:%d bytes are sending...\n", strlen(rtext), cnt);
+        send_packet(rtext, strlen(rtext));
+    }
+    send_packet("END", 3);
+
+    res = f_close(&fil);
+    if (res)
+    {
+        printf("Close file error : %d\r\n", res);
+        return;
+    }
+}
+
 void receive_music()
 {
 }
@@ -355,7 +476,7 @@ void send_packet(char *s, int len) {
     while (1) {
         cmd_res = send_command_with_retry(cmd, 200, 3, 1, NULL);
         if (!cmd_res) continue;
-        cmd_res = send_command_with_retry(s, 2000, 1, 1, NULL);
+        cmd_res = send_command_with_retry(s, 50 * 1000, 1, 1, NULL);
         if (cmd_res) break;
     }
     wait_for_data(1, res);
@@ -366,15 +487,19 @@ void wait_for_packet(char *res) {
     char buffer[MAX_PACKET_LEN + 1];
     erase_data();
     wait_for_data(1, buffer);
+    int cnt = strlen(buffer);
+    printf("Received %d bytes...\n", cnt);
     delay_ms(PACKET_INTERVAL);
 
-    int flag = 0, i = 0, cmd_res;
+    int flag = 0, i = 0, cmd_res, j = 0;
     while (buffer[i] != 0) {
+        if (flag) {
+            res[j++] = buffer[i];
+        }
         if (buffer[i] == ':') flag = 1;
-        if (flag) res[i] = buffer[i];
         i++;
     }
-    res[i] = 0;
+    res[j] = 0;
     while (1) {
         cmd_res = send_command_with_retry("AT+CIPSEND=0,2", 200, 3, 1, NULL);
         if (!cmd_res) continue;
