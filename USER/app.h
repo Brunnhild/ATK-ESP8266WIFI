@@ -21,12 +21,15 @@
 #include "text.h"
 #include "string.h"
 
-#define MAX_PACKET_LEN 256
-#define PACKET_INTERVAL 2000
+#define WINDOW_SIZE 30
+#define MAX_PACKET_LEN 400
+#define MAX_DATA_LEN 300
+#define PACKET_INTERVAL 5000
 
 char *get_peer_ip(void);
 int get_device_id(void);
 int get_run_greet(void);
+int is_it(void);
 
 void set_peer_ip(char *);
 
@@ -49,6 +52,10 @@ int close_file(FIL *fw);
 
 void ui_show(void);
 
+void do_stretch_window(void);
+void destretch_window(void);
+void base64_encode(u8 *src, u8 *res, int str_len);
+void base64_decode(u8 *src, u8 *res);
 void send_packet(char *s, int len);
 void wait_for_packet(char *res);
 
@@ -57,7 +64,5 @@ void extract_fname(char *res, char *fname);
 int extract_end(char *res);
 void receive_picture(void);
 void send_picture(char **music_names, char **picture_names);
-void send_music(char **music_names, char **picture_names);
-void receive_music(void);
 
 #endif

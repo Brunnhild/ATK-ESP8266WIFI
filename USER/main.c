@@ -174,10 +174,11 @@ int main(void)
         send_command_with_retry("AT+CIPSERVER=1,8086", 200, 3, 1, NULL);
         send_command_with_retry("AT+CIPSTO=1200", 200, 3, 1, NULL);
         // send_command_util_success("AT+CWJAP=\"ATK WIFI\",\"12345678\"", 2000, 1, NULL);
+        wait_for_data(1, res);
 
         while (1) {
             wait_for_data(1, res);
-            printf("Greeting from %s: %s\n", peer_ip, res);
+            printf("Received greeting: %s\n", res);
             if (greet_cnt == 1) break;
             delay_ms(PACKET_INTERVAL);
             int _res;

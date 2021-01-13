@@ -1,9 +1,11 @@
 #include "app.h"
 
 char *peer_ip;
-int DEVICE_ID = 1;
+int DEVICE_ID = 2;
 int run_greet = 1;
 
+int stretch_window = 0;
+int window_cnt = 0;
 
 char *get_peer_ip(void) {
     return peer_ip;
@@ -20,6 +22,18 @@ void set_peer_ip(char *p) {
 int get_run_greet() {
     return run_greet;
 }
+
+int is_it() {
+    if (stretch_window == window_cnt) {
+        window_cnt = 0;
+        return 1;
+    } else if (stretch_window > 0) {
+        window_cnt++;
+        return 0;
+    }
+}
+
+
 
 int get_response(int clear, char *res)
 {
@@ -354,19 +368,31 @@ int extract_end(char *res)
     return 256;
 }
 
+void do_stretch_window(void) {
+    stretch_window = WINDOW_SIZE;
+    window_cnt = 0;
+}
+
+void destretch_window(void) {
+    stretch_window = 0;
+    window_cnt = 0;
+}
+
 void receive_picture()
 {
     LCD_Fill(30, 280, 330, 600, WHITE);
     LCD_ShowString(30, 300, 200, 16, 16, "RECEIVING...");
     FIL fil;
-    char *res = (char *) mymalloc(SRAMIN, MAX_PACKET_LEN + 1);
+    char res[MAX_DATA_LEN + 1];
     u32 *cnt;
     FRESULT res1;
     int i;
 
     wait_for_packet(res);
 
-    res1 = f_open(&fil, res, FA_CREATE_ALWAYS | FA_WRITE);
+    printf("%s\n", res);
+    f_unlink(res);
+    res1 = f_open(&fil, res, FA_CREATE_NEW | FA_WRITE | FA_READ);
     res[0] = 0;
 
     if (res1)
@@ -376,6 +402,7 @@ void receive_picture()
     }
     do
     {
+        printf("Wait for ...\n");
         wait_for_packet(res);
         i = extract_end(res);
         if (i == -1)
@@ -404,7 +431,7 @@ void send_picture(char **music_names, char **picture_names)
     LCD_ShowString(30, 300, 200, 16, 16, "SEND...");
     FIL fil;
     char *fname;
-    char rtext[MAX_PACKET_LEN + 1];
+    char rtext[MAX_DATA_LEN + 1];
     u32 cnt, fsize;
     long int i;
     FRESULT res;
@@ -418,19 +445,18 @@ void send_picture(char **music_names, char **picture_names)
         return;
     }
     fsize = fil.fsize;
-    for (i = 0; i <= fsize / MAX_PACKET_LEN; i++)
+    for (i = 0; i <= fsize / MAX_DATA_LEN; i++)
     {
-        res = f_read(&fil, rtext, MAX_PACKET_LEN, (void *)&cnt);
+        res = f_read(&fil, rtext, MAX_DATA_LEN, (void *)&cnt);
         rtext[cnt] = 0;
         if (res)
         {
             printf("Read file error : %d\r\n", res);
             return;
         }
-        printf("%d:%d bytes are sending...\n", strlen(rtext), cnt);
-        send_packet(rtext, strlen(rtext));
+        send_packet(rtext, cnt);
     }
-    send_packet("END", 3);
+    send_packet("END", strlen("END"));
 
     res = f_close(&fil);
     if (res)
@@ -438,16 +464,6 @@ void send_picture(char **music_names, char **picture_names)
         printf("Close file error : %d\r\n", res);
         return;
     }
-}
-
-void receive_music()
-{
-}
-
-// 可以用send_packet和wait_for_packet来收发数据包，一个数据包最大长度是256个字节。
-// 使用FATFS的读写来读取与写入文件，可以参考test_write_file()，这个函数我测过了，其它的还没测过
-void send_music(char **music_names, char **picture_names) {
-
 }
 
 void ui_show()
@@ -469,37 +485,110 @@ void ui_show()
     Show_Str(30, 150, 200, 16, "KEY_UP:PAUSE/PLAY", 16, 0);
 }
 
+void base64_encode(u8 *src, u8 *res, int str_len)
+{
+    long len;
+    int i, j;
+    u8 *base64_table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    if (str_len % 3 == 0)
+        len = str_len / 3 * 4;
+    else
+        len = (str_len / 3 + 1) * 4;
+
+    res[len] = '\0';
+
+    for (i = 0, j = 0; i < len - 2; j += 3, i += 4)
+    {
+        res[i] = base64_table[src[j] >> 2];
+        res[i + 1] = base64_table[(src[j] & 0x3) << 4 | (src[j + 1] >> 4)];
+        res[i + 2] = base64_table[(src[j + 1] & 0xf) << 2 | (src[j + 2] >> 6)];
+        res[i + 3] = base64_table[src[j + 2] & 0x3f];
+    }
+
+    switch (str_len % 3)
+    {
+    case 1:
+        res[i - 2] = '=';
+        res[i - 1] = '=';
+        break;
+    case 2:
+        res[i - 1] = '=';
+        break;
+    }
+}
+
+void base64_decode(u8 *src, u8 *res)
+{
+    int table[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                   0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0,
+                   63, 52, 53, 54, 55, 56, 57, 58,
+                   59, 60, 61, 0, 0, 0, 0, 0, 0, 0, 0,
+                   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                   13, 14, 15, 16, 17, 18, 19, 20, 21,
+                   22, 23, 24, 25, 0, 0, 0, 0, 0, 0, 26,
+                   27, 28, 29, 30, 31, 32, 33, 34, 35,
+                   36, 37, 38, 39, 40, 41, 42, 43, 44,
+                   45, 46, 47, 48, 49, 50, 51};
+    long len;
+    long str_len;
+    int i, j;
+
+    len = strlen(src);
+    if (strstr(src, "=="))
+        str_len = len / 4 * 3 - 2;
+    else if (strstr(src, "="))
+        str_len = len / 4 * 3 - 1;
+    else
+        str_len = len / 4 * 3;
+
+    res[str_len] = '\0';
+
+    for (i = 0, j = 0; i < len - 2; j += 3, i += 4)
+    {
+        res[j] = ((unsigned char)table[src[i]]) << 2 |
+                 (((unsigned char)table[src[i + 1]]) >> 4);
+        res[j + 1] = (((unsigned char)table[src[i + 1]]) << 4) | (((unsigned char)table[src[i + 2]]) >> 2);
+        res[j + 2] = (((unsigned char)table[src[i + 2]]) << 6) |
+                     ((unsigned char)table[src[i + 3]]);
+    }
+}
+
 void send_packet(char *s, int len) {
-    char cmd[30], res[30];
+    printf("%d bytes are sending...\n", len);
+    char cmd[30], res[30], base64[MAX_PACKET_LEN + 1];
     int cmd_res;
-    sprintf(cmd, "AT+CIPSEND=0,%d", len);
+    base64_encode(s, base64, len);
+    // printf("%s\n", base64);
+    sprintf(cmd, "AT+CIPSEND=0,%d", strlen(base64));
     while (1) {
         cmd_res = send_command_with_retry(cmd, 200, 3, 1, NULL);
         if (!cmd_res) continue;
-        cmd_res = send_command_with_retry(s, 50 * 1000, 1, 1, NULL);
+        cmd_res = send_command_with_retry(base64, 3000, 1, 1, NULL);
         if (cmd_res) break;
     }
     wait_for_data(1, res);
+    delay_ms(PACKET_INTERVAL);
 }
 
 // Be sure no data is already received
 void wait_for_packet(char *res) {
-    char buffer[MAX_PACKET_LEN + 1];
+    char buffer[MAX_PACKET_LEN + 30];
+    char *bp = buffer;
     erase_data();
+    do_stretch_window();
     wait_for_data(1, buffer);
-    int cnt = strlen(buffer);
+    destretch_window();
+    while (*bp != ':') bp++;
+    bp++;
+    base64_decode(bp, res);
+    int cnt = strlen(res), cmd_res;
     printf("Received %d bytes...\n", cnt);
+    printf("%s\n", res);
     delay_ms(PACKET_INTERVAL);
-
-    int flag = 0, i = 0, cmd_res, j = 0;
-    while (buffer[i] != 0) {
-        if (flag) {
-            res[j++] = buffer[i];
-        }
-        if (buffer[i] == ':') flag = 1;
-        i++;
-    }
-    res[j] = 0;
+    
     while (1) {
         cmd_res = send_command_with_retry("AT+CIPSEND=0,2", 200, 3, 1, NULL);
         if (!cmd_res) continue;

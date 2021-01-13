@@ -15,6 +15,10 @@ void TIM7_IRQHandler(void)
 {
     if (TIM_GetITStatus(TIM7, TIM_IT_Update) != RESET)
     {
+		if (!is_it()) {
+            TIM_ClearITPendingBit(TIM7, TIM_IT_Update);
+            return;
+        }
         USART3_RX_STA |= 1 << 15;
         TIM_ClearITPendingBit(TIM7, TIM_IT_Update);
         TIM_Cmd(TIM7, DISABLE);
