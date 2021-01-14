@@ -89,6 +89,7 @@ void TIM3_IRQHandler(void)
         LCD_ShowxNum(30 + 14 * 8, 110, temp % 100, 2, 16, 0);
 
         adcx = Lsens_Get_Val();
+        set_temp_adc(temp, adcx);
         LCD_ShowxNum(30 + 10 * 8, 90, adcx, 3, 16, 0);
         LED1 = !LED1;
     }

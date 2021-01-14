@@ -50,7 +50,7 @@ int main(void)
     W25QXX_Init();            //初始化W25Q128
     WM8978_Init();            //初始化WM8978
     WM8978_HPvol_Set(40, 40); //耳机音量设置
-    WM8978_SPKvol_Set(1);     //喇叭音量设置
+    WM8978_SPKvol_Set(50);     //喇叭音量设置
     exfuns_init();            //为fatfs相关变量申请内存
     f_mount(fs[0], "0:", 1);  //挂载SD卡
     f_mount(fs[1], "1:", 1);  //挂载FLASH.

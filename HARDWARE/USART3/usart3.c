@@ -4,6 +4,7 @@
 #include "stdio.h"	 	 
 #include "string.h"	  
 #include "timer.h"
+#include "app.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //±¾³ÌÐòÖ»¹©Ñ§Ï°Ê¹ÓÃ£¬Î´¾­×÷ÕßÐí¿É£¬²»µÃÓÃÓÚÆäËüÈÎºÎÓÃÍ¾
 //ALIENTEK STM32F4¿ª·¢°å
@@ -23,6 +24,7 @@ __align(8) u8 USART3_TX_BUF[USART3_MAX_SEND_LEN]; 	//·¢ËÍ»º³å,×î´óUSART3_MAX_SEN
 //´®¿Ú½ÓÊÕ»º´æÇø 	
 u8 USART3_RX_BUF[USART3_MAX_RECV_LEN]; 				//½ÓÊÕ»º³å,×î´óUSART3_MAX_RECV_LEN¸ö×Ö½Ú.
 
+u8 buffer[MAX_PACKET_LEN + 20], cnt = 0, tmp[MAX_DATA_LEN + 1];
 
 //Í¨¹ýÅÐ¶Ï½ÓÊÕÁ¬Ðø2¸ö×Ö·ûÖ®¼äµÄÊ±¼ä²î²»´óÓÚ100msÀ´¾ö¶¨ÊÇ²»ÊÇÒ»´ÎÁ¬ÐøµÄÊý¾Ý.
 //Èç¹û2¸ö×Ö·û½ÓÊÕ¼ä¸ô³¬¹ý100ms,ÔòÈÏÎª²»ÊÇ1´ÎÁ¬ÐøÊý¾Ý.Ò²¾ÍÊÇ³¬¹ý100msÃ»ÓÐ½ÓÊÕµ½
@@ -30,29 +32,54 @@ u8 USART3_RX_BUF[USART3_MAX_RECV_LEN]; 				//½ÓÊÕ»º³å,×î´óUSART3_MAX_RECV_LEN¸ö×
 //½ÓÊÕµ½µÄÊý¾Ý×´Ì¬
 //[15]:0,Ã»ÓÐ½ÓÊÕµ½Êý¾Ý;1,½ÓÊÕµ½ÁËÒ»ÅúÊý¾Ý.
 //[14:0]:½ÓÊÕµ½µÄÊý¾Ý³¤¶È
-u16 USART3_RX_STA=0;   	 
+u16 USART3_RX_STA=0;
 void USART3_IRQHandler(void)
 {
-	u8 res;	    
-	if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)//½ÓÊÕµ½Êý¾Ý
-	{	 
- 
-	res =USART_ReceiveData(USART3);		
-	if((USART3_RX_STA&(1<<15))==0)//½ÓÊÕÍêµÄÒ»ÅúÊý¾Ý,»¹Ã»ÓÐ±»´¦Àí,Ôò²»ÔÙ½ÓÊÕÆäËûÊý¾Ý
-	{ 
-		if(USART3_RX_STA<USART3_MAX_RECV_LEN)		//»¹¿ÉÒÔ½ÓÊÕÊý¾Ý
-		{
-			TIM_SetCounter(TIM7,0);//¼ÆÊýÆ÷Çå¿Õ        				 
-			if(USART3_RX_STA==0)		
-				TIM_Cmd(TIM7, ENABLE);  //Ê¹ÄÜ¶¨Ê±Æ÷7 
-			USART3_RX_BUF[USART3_RX_STA++]=res;		//¼ÇÂ¼½ÓÊÕµ½µÄÖµ	 
-		}else 
-		{
-			USART3_RX_STA|=1<<15;					//Ç¿ÖÆ±ê¼Ç½ÓÊÕÍê³É
-		} 
-	}  	
- }										 
-}  
+    u8 res;
+    if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET) //½ÓÊÕµ½Êý¾Ý
+    {
+
+        res = USART_ReceiveData(USART3);
+        if (get_long_sending()) {
+            // printf("\"%c\"\n", res);
+            if (res == '\r' || res == '\n') {
+                if (cnt != 0) {
+                    buffer[cnt] = 0;
+                    printf("%s\n", buffer);
+                    int i = 0, len, buffer_len = strlen(buffer);
+                    while (buffer[i] != ':') i++;
+                    len = strlen(buffer + i + 1) / 4 * 3;
+                    if (buffer[buffer_len - 2] == '=') len -= 2;
+                    else if (buffer[buffer_len - 1] == '=') len -= 1;
+                    base64_decode(buffer + i + 1, tmp);
+                    if (!strcmp(tmp, "END\n")) {
+                        end_writing_picture();
+                        return;
+                    }
+                    write_to_picture(tmp, len);
+                }
+                cnt = 0;
+                buffer[0] = 0;
+            }
+            else buffer[cnt++] = res;
+            return;
+        }
+        if ((USART3_RX_STA & (1 << 15)) == 0) //½ÓÊÕÍêµÄÒ»ÅúÊý¾Ý,»¹Ã»ÓÐ±»´¦Àí,Ôò²»ÔÙ½ÓÊÕÆäËûÊý¾Ý
+        {
+            if (USART3_RX_STA < USART3_MAX_RECV_LEN) //»¹¿ÉÒÔ½ÓÊÕÊý¾Ý
+            {
+                TIM_SetCounter(TIM7, 0); //¼ÆÊýÆ÷Çå¿Õ
+                if (USART3_RX_STA == 0)
+                    TIM_Cmd(TIM7, ENABLE);            //Ê¹ÄÜ¶¨Ê±Æ÷7
+                USART3_RX_BUF[USART3_RX_STA++] = res; //¼ÇÂ¼½ÓÊÕµ½µÄÖµ
+            }
+            else
+            {
+                USART3_RX_STA |= 1 << 15; //Ç¿ÖÆ±ê¼Ç½ÓÊÕÍê³É
+            }
+        }
+    }
+}
 #endif	
 //³õÊ¼»¯IO ´®¿Ú3
 //bound:²¨ÌØÂÊ	  

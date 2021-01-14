@@ -22,8 +22,8 @@
 #include "string.h"
 
 #define WINDOW_SIZE 30
-#define MAX_PACKET_LEN 400
-#define MAX_DATA_LEN 300
+#define MAX_PACKET_LEN 80
+#define MAX_DATA_LEN 60
 #define PACKET_INTERVAL 5000
 
 char *get_peer_ip(void);
@@ -52,17 +52,27 @@ int close_file(FIL *fw);
 
 void ui_show(void);
 
+void enable_long_sending(void);
+void disable_long_sending(void);
+int get_long_sending(void);
 void do_stretch_window(void);
 void destretch_window(void);
 void base64_encode(u8 *src, u8 *res, int str_len);
 void base64_decode(u8 *src, u8 *res);
+void send_long_data(char *s, int len);
 void send_packet(char *s, int len);
 void wait_for_packet(char *res);
 
 int get_music_file_names(char **music_names, char **picture_names);
 void extract_fname(char *res, char *fname);
 int extract_end(char *res);
+void write_to_picture(u8 *data, int len);
+void end_writing_picture(void);
 void receive_picture(void);
 void send_picture(char **music_names, char **picture_names);
+
+void set_temp_adc(int a, int b);
+void exchange();
+void receive_temp_adc();
 
 #endif
